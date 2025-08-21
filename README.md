@@ -86,6 +86,7 @@ Building upon the previous CPE-214 project, this version upgrades the system fro
 - **User button** (PA0)
 
 ### 📍 Pin Allocation
+<img width="2155" height="666" alt="image" src="https://github.com/user-attachments/assets/9409cd06-742d-4608-9f36-382de4b3115e" />
 
 
 ### 📸 Real Hardware Setup
