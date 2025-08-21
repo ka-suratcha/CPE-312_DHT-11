@@ -3,8 +3,28 @@
 ## 📖 Overview
 This project was created as part of **CPE-312: Embedded System Laboratory**.
 
-Building upon the previous CPE-214 project, this version adds **closed-loop actuation**: a DC motor (e.g., a fan) is driven with **PWM** based on the measured temperature from a **DHT11** sensor. Readings are shown on the on-board glass LCD, and a user button toggles the display between temperature and humidity. An on-board LED indicates when the system is actively cooling.
+Building upon the previous CPE-214 project, this version upgrades the system from a simple “alarm-only” design to temperature-driven actuation. In CPE-214, the device read the DHT11, showed the value on the LCD, and when the **temperature exceeded** a fixed threshold it just turned on LEDs and a **DAC-driven buzzer** (T > 20 °C) and displayed either temperature or humidity with a button toggle. In CPE-312, the device still measures and displays T/RH, but now it drives a **DC motor (fan) with PWM** when the temperature is high (T > 28 °C): it computes a duty cycle and enables the motor, turning an LED on as an activity indicator.
 
+
+### 🔁 What changed from CPE-214 → CPE-312 
+- **Control behavior**
+  - **CPE-214:** Alarm-only — if `T > 20 °C`, turn **LEDs + DAC buzzer** on; otherwise off.
+  - **CPE-312:** Active cooling — if `T > 28 °C`, compute a PWM duty and **drive a motor (fan)**; LED indicates motor active.
+
+- **Actuators / Outputs**
+  - **CPE-214:** DAC on **PA5** for the buzzer + LEDs (**PA11**, **PB6**).
+  - **CPE-312:** PWM on **TIM4 CH2 (PB7)** to a motor driver, **ENABLE on PA4**, **DIR on PA11**; **PB6** LED used as an “active cooling” indicator.
+
+- **Sensor timing**
+  - **CPE-214:** Bit timing via simple busy-wait loops and counters.
+  - **CPE-312:** Microsecond-accurate **DWT delays** for more robust DHT11 reads.
+
+- **Threshold policy**
+  - **CPE-214:** Fixed alarm threshold at **20 °C** (binary on/off).
+  - **CPE-312:** Higher threshold at **28 °C** with **proportional PWM** (duty scales with temperature above the threshold).
+
+- **User interface**
+  - **Both:** **PA0** button toggles LCD view between temperature and humidity; values are shown on the **STM32L152 glass LCD**.
 ---
 
 ## ✨ Features
@@ -28,31 +48,33 @@ Building upon the previous CPE-214 project, this version adds **closed-loop actu
 ---
 
 ## ▶️ Example Workflow
-1. **Init**  
+1. **System Initialization**:  
    Configure system clock (32 MHz), LCD, GPIO, EXTI0, DWT delay, and TIM4 PWM.
 2. **Direction setup**  
    Set motor direction to “Right” (H-side/PWM path enabled, L-side held low).
-3. **Sense**  
-   Read DHT11 and parse 40-bit frame → `temperature`, `humidity`.
-4. **Decide**  
-   If `temperature > 28 °C` → compute duty and:
+3. **DHT11 Data Acquisition**:
+   - Continuously read 40-bit data frame from DHT11.
+   - Extract `humidity` and `temperature` values.
+4. **Condition Check**: 
+   If `temperature > 28 °C`→
    - Enable motor (PA4 = HIGH)
    - Update TIM4 CH2 compare value (PB7 PWM)
    - Turn ON LED (PB6 = HIGH)  
    Else → disable motor and turn OFF LED.
-5. **Display**  
-   Show `T xx` or `H xx` on the LCD; press button (PA0) to toggle the view.
-6. **Loop**  
-   Repeat sense → decide → actuate → display.
+5. **Display on LCD**:
+   - Default display: Temperature.  
+   - Press **user button (PA0)** → switch to humidity view.  
+   - Press again → switch back to temperature.
 
 ---
 
 ## 🚀 Future Improvements
 - **Configurable thresholds** and duty mapping via button UI or serial console.
-- **Humidity-aware policy** (e.g., combine T and RH for comfort index control).
 - **Smoother PWM** (raise PWM frequency by adjusting PSC/ARR to reduce audible buzz).
-- **Safety & telemetry**: add stall detection, overcurrent flag, UART logs, or EEPROM/Flash logging.
-- **Driver abstraction**: replace direct LL calls with a small HAL for portability.
+- Store historical data in **EEPROM/Flash** for later analysis.
+- Add **serial output (UART)** for data logging on PC.
+- Support additional sensors (e.g., DHT22 for better accuracy).
+- Add **humidity warnings** to the list of buzzer alerts.
 
 ---
 
@@ -63,7 +85,8 @@ Building upon the previous CPE-214 project, this version adds **closed-loop actu
 - **On-board LED** (PB6)
 - **User button** (PA0)
 
----
+### 📍 Pin Allocation
 
-## 📍 Pin Allocation
+
+### 📸 Real Hardware Setup
 
